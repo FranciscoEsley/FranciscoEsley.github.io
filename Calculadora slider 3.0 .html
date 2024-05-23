@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        #app {
+            text-align: center;
+            padding: 3%;
+            border-radius: 10px;
+            background-color: #fff;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            width: 80%; /* Ajustando para 90% da largura da tela */
+            max-width: 600px; /* Definindo uma largura máxima */
+        }
+        h1 {
+            margin-top: 0;
+            color: #007BFF;
+        }
+        label {
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="number"] {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 50%; /* Ajustando para 50% da largura do container pai */
+            margin-top: 5px;
+        }
+        input[type="range"] {
+            width: 70%; /* Ajustando para 70% da largura do container pai */
+            margin-top: 5px;
+        }
+        .slider-container {
+            margin-top: 15px;
+            width: 80%;
+            margin: 20px;
+            display: flex;
+            align-items: center;
+        }
+        .slider-label {
+            width: 70%;
+            text-align: leftt;
+            color: #555;
+        }
+        .slider {
+            -webkit-appearance: none;
+            width: 60%;
+            height: 15px;
+            border-radius: 5px;
+            background: #d3d3d3;
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+            margin: 5px;
+        }
+        .slider.disabled {
+            background: #cccccc;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #007BFF;
+            cursor: pointer;
+        }
+        .slider::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #007BFF;
+            cursor: pointer;
+        }
+        .slider-value {
+            width: 5%;
+            text-align: center;
+            font-size: 14px;
+            color: #007BFF;
+        }
+        .error-message {
+            color: red;
+            margin-top: 20px; /* Reduzindo o espaço */
+            height: 20px;
+        }
+        .info-message {
+            color: #007BFF;
+            margin-top: 10px;
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #007BFF;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Media query para ajustar o layout em telas menores */
+        @media only screen and (max-width: 600px) {
+            #app {
+                padding: 10%;
+            }
+            input[type="number"],
+            input[type="range"] {
+                width: 80%; /* Ajustando para 80% da largura do container pai */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h1>Calculadora de Orçamento</h1>
+        <label for="amount">Insira o valor:</label><br>
+        <input type="number" id="amount" name="amount"><br><br>
+        <label for="essential-input">Gastos Essenciais: (Valor predefinido)</label><br>
+        <input type="number" id="essential-input" name="essential-input"><br><br>
+        <div class="slider-container">
+            <label class="slider-label" for="essential">Gastos Essenciais (%):</label>
+            <input type="range" min="0" max="100" value="0" class="slider" id="essential">
+            <span class="slider-value" id="essential-value">0</span>
+        </div>
+        <div class="slider-container">
+            <label class="slider-label" for="nonEssential">Gastos Não Essenciais (%):</label>
+            <input type="range" min="0" max="100" value="0" class="slider" id="nonEssential">
+            <span class="slider-value" id="nonEssential-value">0</span>
+        </div>
+        <div class="slider-container">
+            <label class="slider-label" for="reserve">Reserva (%):</label>
+            <input type="range" min="0" max="100" value="0" class="slider" id="reserve">
+            <span class="slider-value" id="reserve-value">0</span>
+        </div>
+        <div id="percentage-error" class="error-message"></div>
+        <div id="percentage-info" class="info-message"></div>
+        <div id="result"></div>
+    </div>
+
+    <script>
+    // Event listeners para atualização em tempo real
+        document.getElementById('amount').addEventListener('input', calculate);
+        document.getElementById('essential-input').addEventListener('input', function() {
+            var essentialInput = document.getElementById('essential-input');
+            var slider = document.getElementById('essential');
+            slider.classList.toggle('disabled', essentialInput.value !== '');
+            calculate();
+        });
+
+        document.getElementById('essential').addEventListener('input', function() {
+            updateSliderValue('essential');
+            calculate();
+        });
+        document.getElementById('nonEssential').addEventListener('input', function() {
+            updateSliderValue('nonEssential');
+            calculate();
+        });
+        document.getElementById('reserve').addEventListener('input', function() {
+            updateSliderValue('reserve');
+            calculate();
+        });
+
+        function updateSliderValue(id) {
+            var slider = document.getElementById(id);
+            var sliderValue = slider.value;
+            document.getElementById(id + '-value').textContent = sliderValue;
+        }
+
+        function calculate() {
+            var amount = parseFloat(document.getElementById('amount').value) || 0;
+            var essentialInput = parseFloat(document.getElementById('essential-input').value) || 0;
+            var essentialPercentage = parseFloat(document.getElementById('essential').value / 100);
+            var nonEssentialPercentage = parseFloat(document.getElementById('nonEssential').value / 100);
+            var reservePercentage = parseFloat(document.getElementById('reserve').value / 100);
+
+            var adjustedAmount = amount - essentialInput; // Subtrai o valor de Gastos Essenciais do total
+
+            var nonEssential = adjustedAmount * nonEssentialPercentage;
+            var reserve = adjustedAmount * reservePercentage;
+            
+            if (essentialInput) {
+                essentialPercentage = 0;
+            }
+
+            var totalPercentage = essentialPercentage + nonEssentialPercentage + reservePercentage;
+            if (totalPercentage > 1) {
+                document.getElementById('percentage-error').textContent = "A soma das porcentagens não pode exceder 100%.";
+                return;
+            } else {
+                document.getElementById('percentage-error').textContent = "";
+            }
+
+            var essential = essentialInput || amount * essentialPercentage;
+            var nonEssential = adjustedAmount * nonEssentialPercentage;
+            var reserve = adjustedAmount * reservePercentage;
+
+            document.getElementById('result').innerHTML = 
+                "<strong>Gastos Essenciais:</strong> " + essential.toFixed(2) + "<br>" +
+                "<strong>Gastos Não Essenciais:</strong> " + nonEssential.toFixed(2) + "<br>" +
+                "<strong>Reserva:</strong> " + reserve.toFixed(2);
+        }
+    </script>
+</body>
+</html>
